@@ -6,27 +6,13 @@ io.files.info io.monitors io.pathnames json.writer kernel
 locals prettyprint sequences threads ;
 IN: sync-monitor
 
-: (build-hash) ( hash mailbox -- )
-    2dup mailbox-get path>> dup
-    link-info modified>> timestamp>micros swap rot set-at
-    (build-hash) ;
-
-: build-hash ( mailbox -- hash )
-    H{ } clone tuck swap
-    [ (build-hash) ] 2curry  "Building hashtable from filesystem events"
-    spawn drop ;
-
-
-: sync-mailbox ( path -- mailbox )
-    <mailbox> tuck swap
-    [ swap t swap (monitor) ] with map drop ;
-
-
-: modified-time-pair ( path -- path-mtime-pair )
-    dup link-info modified>> timestamp>millis
-    2array
+: modified-time ( path -- mtime )
+    link-info modified>> timestamp>millis
     ;
 
+: modified-time-pair ( path -- path-mtime-pair )
+    dup modified-time 2array
+    ;
 
 : get-file-mtime-pairs ( path -- assoc )
     dup directory-files
@@ -38,11 +24,17 @@ IN: sync-monitor
     dup get-file-mtime-pairs 1array >hashtable at* drop json-print
     ;
 
-: print-files-changed ( mailbox -- )
-    dup mailbox-get path>>
-    modified-time-pair 1array >hashtable json-print
-    "\n" write
-    print-files-changed ;
+
+
+: (build-hash) ( hash mailbox -- )
+    2dup 
+    mailbox-get path>> dup modified-time swap rot set-at
+    (build-hash) ;
+
+: build-hash ( mailbox -- hash )
+    H{ } clone tuck swap
+    [ (build-hash) ] 2curry  "Building hashtable from filesystem events"
+    spawn drop ;
 
 
 : monitor-mailbox ( monitor mailbox -- )
@@ -50,14 +42,27 @@ IN: sync-monitor
     next-change swap mailbox-put
     monitor-mailbox ;
 
-: pull-sync ( paths-seq -- )
+: sync-mailbox ( path -- mailbox )
+    <mailbox> tuck swap [ t <monitor> monitor-mailbox ] 2curry [ with-monitors ] curry "monitor-mailbox" spawn drop
+    ;
+
+
+
+: print-files-changed ( mailbox -- )
+    dup mailbox-get path>>
+    modified-time-pair 1array >hashtable json-print
+    "\n" write
+    print-files-changed ;
+
+
+: pull-sync ( path -- )
     sync-mailbox
     build-hash 
     [ dup clone swap clear-assoc json-print drop ] curry
     each-line
     ;
 
-: push-sync ( paths-seq -- )
+: push-sync ( path -- )
     sync-mailbox
     print-files-changed
     ;
