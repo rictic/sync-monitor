@@ -1,6 +1,9 @@
 ! Copyright (C) 2009 Peter Burns.
 ! See http://factorcode.org/license.txt for BSD license.
-USING: concurrency.mailboxes kernel io.monitors sequences accessors prettyprint locals io.files.info command-line calendar assocs threads json.writer io arrays hashtables io.directories ;
+USING: accessors arrays assocs calendar command-line
+concurrency.mailboxes hashtables io io.directories
+io.files.info io.monitors io.pathnames json.writer kernel
+locals prettyprint sequences threads ;
 IN: sync-monitor
 
 : (build-hash) ( hash mailbox -- )
@@ -18,22 +21,21 @@ IN: sync-monitor
     <mailbox> tuck swap
     [ swap t swap (monitor) ] with map drop ;
 
+
 : modified-time-pair ( path -- path-mtime-pair )
-    dup link-info modified>> timestamp>micros
+    dup link-info modified>> timestamp>millis
     2array
     ;
 
 
-: get-file-mtime-pairs ( pair -- assoc )
-    dup 
-    [ 
-        [ dup link-info directory? [ get-file-mtime-pairs ] [ modified-time-pair ] if ] map 
-    ] with-directory-files
+: get-file-mtime-pairs ( path -- assoc )
+    dup directory-files
+    [ over prepend-path dup link-info directory? [ get-file-mtime-pairs ] [ modified-time-pair ] if ] map 
     >hashtable
     2array
     ;
 : dir-print-mtimes ( path -- )
-    get-file-mtime-pairs 1array >hashtable json-print
+    dup get-file-mtime-pairs 1array >hashtable at* drop json-print
     ;
 
 : print-files-changed ( mailbox -- )
@@ -41,7 +43,6 @@ IN: sync-monitor
     modified-time-pair 1array >hashtable json-print
     "\n" write
     print-files-changed ;
-
 
 
 : monitor-mailbox ( monitor mailbox -- )
