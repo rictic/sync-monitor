@@ -26,43 +26,35 @@ IN: sync-monitor
 
 
 
-: (build-hash) ( hash mailbox -- )
+: (build-hash) ( hash monitor -- )
     2dup 
-    mailbox-get path>> dup modified-time swap rot set-at
+    next-change path>> dup modified-time swap rot set-at
     (build-hash) ;
 
-: build-hash ( mailbox -- hash )
+: build-hash ( monitor -- hash )
     H{ } clone tuck swap
     [ (build-hash) ] 2curry  "Building hashtable from filesystem events"
     spawn drop ;
 
 
-: monitor-mailbox ( monitor mailbox -- )
-    2dup 
-    next-change swap mailbox-put
-    monitor-mailbox ;
-
-: sync-mailbox ( path -- mailbox )
-    <mailbox> tuck swap [ t <monitor> monitor-mailbox ] 2curry [ with-monitors ] curry "monitor-mailbox" spawn drop
-    ;
-
-
-
-: print-files-changed ( mailbox -- )
-    dup mailbox-get path>>
+! : sync-mailbox ( path -- mailbox )
+!    <mailbox> tuck swap [ t <monitor> monitor-mailbox ] 2curry [ with-monitors ] curry "monitor-mailbox" spawn drop
+!    ;
+    
+: print-files-changed ( monitor -- )
+    dup next-change path>>
     modified-time-pair 1array >hashtable json-print
     "\n" write
     print-files-changed ;
 
 
-: pull-sync ( path -- )
-    sync-mailbox
-    build-hash 
-    [ dup clone swap clear-assoc json-print drop ] curry
-    each-line
-    ;
+! : pull-sync ( path -- )
+!     sync-mailbox
+!     build-hash
+!     [ dup clone swap clear-assoc json-print drop ] curry
+!     each-line
+!     ;
 
 : push-sync ( path -- )
-    sync-mailbox
-    print-files-changed
+    [ t <monitor> print-files-changed ] curry with-monitors
     ;
