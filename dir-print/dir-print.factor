@@ -1,8 +1,8 @@
-USING: command-line sequences kernel io.files.info accessors calendar arrays io.directories hashtables json.writer io.pathnames sync-monitor io ;
+USING: command-line sequences kernel sync-monitor io ;
 IN: sync-monitor.dir-print 
 
 : dir-print-main ( -- )
-    (command-line) [ dir-print-mtimes "\n" print ] each 
+    (command-line) [ dir-print-mtimes "\n" write flush ] each 
     ;
     
 MAIN: dir-print-main
