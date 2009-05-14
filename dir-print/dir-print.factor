@@ -1,4 +1,4 @@
-USING: command-line sequences kernel io.files.info accessors calendar arrays io.directories hashtables json.writer ;
+USING: command-line sequences kernel io.files.info accessors calendar arrays io.directories hashtables json.writer io.pathnames ;
 IN: sync-monitor.dir-print 
 
 : modified-time-pair ( path -- path-mtime-pair )
@@ -7,10 +7,10 @@ IN: sync-monitor.dir-print
     ;
 
 
-: get-file-mtime-pairs ( pair -- assoc )
+: get-file-mtime-pairs ( path -- assoc )
     dup 
     [ 
-        [ dup link-info directory? [ get-file-mtime-pairs ] [ modified-time-pair ] if ] map 
+        [ over prepend-path dup link-info directory? [ get-file-mtime-pairs ] [ modified-time-pair ] if ] map 
     ] with-directory-files
     >hashtable
     2array
