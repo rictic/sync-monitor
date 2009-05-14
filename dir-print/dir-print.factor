@@ -8,10 +8,8 @@ IN: sync-monitor.dir-print
 
 
 : get-file-mtime-pairs ( path -- assoc )
-    dup 
-    [ 
-        [ over prepend-path dup link-info directory? [ get-file-mtime-pairs ] [ modified-time-pair ] if ] map 
-    ] with-directory-files
+    dup directory-files
+    [ over prepend-path dup link-info directory? [ get-file-mtime-pairs ] [ modified-time-pair ] if ] map 
     >hashtable
     2array
     ;
