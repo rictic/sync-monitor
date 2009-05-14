@@ -52,13 +52,14 @@ IN: sync-monitor
     dup mailbox-get path>>
     modified-time-pair 1array >hashtable json-print
     "\n" write
+    flush
     print-files-changed ;
 
 
 : pull-sync ( path -- )
     sync-mailbox
     build-hash 
-    [ dup clone swap clear-assoc json-print drop ] curry
+    [ dup clone swap clear-assoc json-print drop "\n" write flush ] curry
     each-line
     ;
 
